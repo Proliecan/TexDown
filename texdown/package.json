@@ -10,13 +10,13 @@
 		"Other"
 	],
 	"activationEvents": [
-        "onCommand:texdown.helloWorld"
+        "*"
 	],
 	"main": "./extension.js",
 	"contributes": {
 		"commands": [{
-            "command": "texdown.helloWorld",
-            "title": "Hello World"
+            "command": "texdown.convert",
+            "title": "Convert to .tex with standard template"
 
 		}]
 	},
