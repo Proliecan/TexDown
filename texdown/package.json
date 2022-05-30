@@ -1,7 +1,7 @@
 {
   "name": "texdown",
 	"displayName": "TexDown",
-	"description": "An easy Markdown to LaTex converter; Write LaTex in seconds!",
+	"description": "An easy Markdown to LaTex converter; write LaTex in seconds!",
 	"version": "0.0.1",
 	"engines": {
 		"vscode": "^1.67.0"

@@ -5,4 +5,11 @@
 node_modules
 
 # package.json
-package.json
+./package.json
+texdown/package-lock.json
+
+# Quickstart guide
+texdown/vsc-extension-quickstart.md
+
+# tests
+texdown/test
