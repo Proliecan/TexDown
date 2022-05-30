@@ -1,0 +1,8 @@
+# vscode workspace settings
+.vscode
+
+# npm packages
+node_modules
+
+# package.json
+package.json
