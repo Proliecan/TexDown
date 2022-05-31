@@ -58,7 +58,7 @@ module.exports = {
 // utility functions
 let parseBold = (text) => {
 	// get regex for **<sometext>**
-	let bold = /\*\*(.*?)\*\*/g;
+	let bold = /[\*\_][\*\_](.*?)[\*\_][\*\_]/gs;
 	// match regex
 	let matches = text.match(bold);
 	// replace regex with \\textbf{<sometext>}
