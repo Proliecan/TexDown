@@ -28,7 +28,7 @@ function activate(context) {
 		text = parseItalic(text);
 
 		// document syntax
-		text = surroundWithStandardTemplate(text);
+		text = surroundWithMinimalTemplate(text);
 
 	
 
@@ -85,7 +85,7 @@ let parseItalic = (text) => {
 	return text;
 }
 
-let surroundWithStandardTemplate = (text) => {
+let surroundWithMinimalTemplate = (text) => {
 	let doc = `\\documentclass[12pt]{article}
 \\usepackage[utf8]{inputenc}
 

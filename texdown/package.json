@@ -16,7 +16,7 @@
 	"contributes": {
 		"commands": [{
             "command": "texdown.convert",
-            "title": "Convert to .tex with standard template"
+            "title": "Convert to .tex with minimal template"
 
 		}]
 	},
