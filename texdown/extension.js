@@ -25,6 +25,7 @@ function activate(context) {
 
 		//parse
 		text = parseBold(text);
+		text = parseItalic(text);
 
 		// document syntax
 		text = surroundWithStandardTemplate(text);
@@ -65,6 +66,20 @@ let parseBold = (text) => {
 	for (let i = 0; i < matches.length; i++) {
 		let match = matches[i];
 		let replacement = '\\textbf{' + match.substring(2, match.length - 2) + '}';
+		text = text.replace(match, replacement);
+	}
+	return text;
+}
+
+let parseItalic = (text) => {
+	// get regex for **<sometext>**
+	let italic = /[\*\_](.*?)[\*\_]/gs;
+	// match regex
+	let matches = text.match(italic);
+	// replace regex with \\textbf{<sometext>}
+	for (let i = 0; i < matches.length; i++) {
+		let match = matches[i];
+		let replacement = '\\textit{' + match.substring(1, match.length - 1) + '}';
 		text = text.replace(match, replacement);
 	}
 	return text;
