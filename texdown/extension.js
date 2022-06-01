@@ -1,6 +1,8 @@
 const vscode = require('vscode');
 const fs = require('fs');
 
+let preamble = "";
+
 /**
  * @param {vscode.ExtensionContext} context
  */
@@ -12,13 +14,13 @@ function activate(context) {
 
 		// read text from open file
 		let editor = vscode.window.activeTextEditor;
-		if (!editor){
+		if (!editor) {
 			vscode.window.showErrorMessage('No file opened');
 			return;
 		}
 		let text = editor.document.getText();
 		// if text is empty, show error message and return
-		if (text.length === 0){
+		if (text.length === 0) {
 			vscode.window.showErrorMessage('No text to convert');
 			return;
 		}
@@ -26,11 +28,12 @@ function activate(context) {
 		//parse
 		text = parseBold(text);
 		text = parseItalic(text);
+		text = parseCodeSpan(text);
 
 		// document syntax
 		text = surroundWithMinimalTemplate(text);
 
-	
+
 
 		// write to file with .tex extension
 		let fileName = editor.document.fileName;
@@ -63,11 +66,12 @@ let parseBold = (text) => {
 	// match regex
 	let matches = text.match(bold);
 	// replace regex with \\textbf{<sometext>}
-	for (let i = 0; i < matches.length; i++) {
-		let match = matches[i];
-		let replacement = '\\textbf{' + match.substring(2, match.length - 2) + '}';
-		text = text.replace(match, replacement);
-	}
+	if (matches !== null)
+		for (let i = 0; i < matches.length; i++) {
+			let match = matches[i];
+			let replacement = '\\textbf{' + match.substring(2, match.length - 2) + '}';
+			text = text.replace(match, replacement);
+		}
 	return text;
 }
 
@@ -77,17 +81,46 @@ let parseItalic = (text) => {
 	// match regex
 	let matches = text.match(italic);
 	// replace regex with \\textbf{<sometext>}
-	for (let i = 0; i < matches.length; i++) {
-		let match = matches[i];
-		let replacement = '\\textit{' + match.substring(1, match.length - 1) + '}';
-		text = text.replace(match, replacement);
+	if (matches !== null)
+		for (let i = 0; i < matches.length; i++) {
+			let match = matches[i];
+			let replacement = '\\textit{' + match.substring(1, match.length - 1) + '}';
+			text = text.replace(match, replacement);
+		}
+	return text;
+}
+
+let parseCodeSpan = (text) => {
+	// get regex for **<sometext>**
+	let code = /`(.*?)`/g;
+	// match regex
+	let matches = text.match(code);
+	// replace regex with \\textbf{<sometext>}
+	if (matches !== null) {
+		for (let i = 0; i < matches.length; i++) {
+			let match = matches[i];
+			let replacement = '\\lstin{' + match.substring(1, match.length - 1) + '}';
+			text = text.replace(match, replacement);
+		}
+		preamble += `\\usepackage{xcolor}                                     % Color
+\\usepackage{listings}                                   % Sourcecode Pretty printing
+    \\lstset{
+		stringstyle = \\ttfamily, numbers = left, basicstyle = \\small, numberstyle = \\ttfamily, breaklines, breakatwhitespace,
+		keywordstyle = \\color{violet}, commentstyle = \\color{cyan},
+		showspaces = false, showstringspaces = false, showtabs = true,
+		frame = single, frameround = tttt, backgroundcolor = \\color{gray!40}, fillcolor = \\color{white}
+	}
+	\\newcommand*\\lstin{\\lstinline[columns=fixed]}`;
 	}
 	return text;
 }
 
 let surroundWithMinimalTemplate = (text) => {
+	preamble += "\\usepackage[utf8]{inputenc}\n";
+
 	let doc = `\\documentclass[12pt]{article}
-\\usepackage[utf8]{inputenc}
+
+${preamble}
 
 \\begin{document}
 ${text}
