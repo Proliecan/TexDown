@@ -2,6 +2,7 @@ const vscode = require('vscode');
 const fs = require('fs');
 
 let preamble = "";
+let maketitle = false;
 
 /**
  * @param {vscode.ExtensionContext} context
@@ -26,6 +27,7 @@ function activate(context) {
 
 		// clear praemble
 		preamble = "";
+		maketitle = false;
 
 		// convert text to LF line endings
 		text = text.replace(/\r\n/g, '\n');
@@ -34,11 +36,15 @@ function activate(context) {
 		text = parseBold(text);
 		text = parseItalic(text);
 		text = parseCode(text);
+		text = parseTitles(text);
 
 		// document syntax
+		if (maketitle) {
+			// add \\maketitle as first line to text
+			text = '\\maketitle\n' + text;
+		}
 		text = surroundWithMinimalTemplate(text);
-
-
+		
 
 		// write to file with .tex extension
 		let fileName = editor.document.fileName;
@@ -64,7 +70,7 @@ module.exports = {
 	deactivate
 }
 
-// utility functions
+// UTITLITY FUNCTIONS
 let parseBold = (text) => {
 	// get regex for **<sometext>**
 	let bold = /[\*\_][\*\_](.*?)[\*\_][\*\_]/gs;
@@ -195,6 +201,23 @@ let parseIndentedCode = (text) => {
 	}
 
 	return [matches !== null, text];
+}
+
+let parseTitles = (text) => {
+	// get first line of text
+	let firstLine = text.split('\n')[0];
+	// get regex for #<sometext>
+	let titleRegex = /^#(.*)$/;
+	if (titleRegex.test(firstLine)) {
+		// get title
+		let title = firstLine.match(titleRegex)[1];
+		// remove line from text
+		text = text.replace(firstLine, '');
+		// add title to preamble
+		preamble += '\\title{' + title + '}\n';
+		maketitle = true;
+	}
+	return text;
 }
 
 // template
