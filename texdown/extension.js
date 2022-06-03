@@ -11,11 +11,10 @@ function activate(context) {
 	console.log('Congratulations, your extension "texdown" is now active!');
 
 	let disposable = vscode.commands.registerCommand('texdown.convert', async function () {
-
 		// read text from open file
 		let editor = vscode.window.activeTextEditor;
 		if (!editor) {
-			vscode.window.showErrorMessage('No file opened');
+			vscode.window.showErrorMessage('No *.md file opened');
 			return;
 		}
 		let text = editor.document.getText();
@@ -25,10 +24,16 @@ function activate(context) {
 			return;
 		}
 
+		// clear praemble
+		preamble = "";
+
+		// convert text to LF line endings
+		text = text.replace(/\r\n/g, '\n');
+
 		//parse
 		text = parseBold(text);
 		text = parseItalic(text);
-		text = parseCodeSpan(text);
+		text = parseCode(text);
 
 		// document syntax
 		text = surroundWithMinimalTemplate(text);
@@ -90,18 +95,18 @@ let parseItalic = (text) => {
 	return text;
 }
 
-let parseCodeSpan = (text) => {
-	// get regex for **<sometext>**
-	let code = /`(.*?)`/g;
-	// match regex
-	let matches = text.match(code);
-	// replace regex with \\textbf{<sometext>}
-	if (matches !== null) {
-		for (let i = 0; i < matches.length; i++) {
-			let match = matches[i];
-			let replacement = '\\lstin{' + match.substring(1, match.length - 1) + '}';
-			text = text.replace(match, replacement);
-		}
+let parseCode = (text) => {
+
+	// parse inline code
+	let inline = parseInlineCode(text);
+	text = inline[1];
+
+	// parse indented code blocks
+	let indented = parseIndentedCode(text);
+	text = indented[1];
+
+	if (inline[0] === true || indented[0] === true) {
+		// add preamble
 		preamble += `\\usepackage{xcolor}                                     % Color
 \\usepackage{listings}                                   % Sourcecode Pretty printing
     \\lstset{
@@ -109,12 +114,90 @@ let parseCodeSpan = (text) => {
 		keywordstyle = \\color{violet}, commentstyle = \\color{cyan},
 		showspaces = false, showstringspaces = false, showtabs = true,
 		frame = single, frameround = tttt, backgroundcolor = \\color{gray!40}, fillcolor = \\color{white}
+	}\n`;
 	}
-	\\newcommand*\\lstin{\\lstinline[columns=fixed]}`;
+	if (inline[0] === true) {
+		preamble += `	\\newcommand*\\lstinl{\\lstinline[columns=fixed]}`;
+
+
 	}
 	return text;
 }
 
+/*
+* @param {string} text
+* @returns {array} [(bool)changed text, (string)text]
+*/
+let parseInlineCode = (text) => {
+	// get regex for **<sometext>**
+	let inlineRegex = /`(.*?)`/g;
+	// match regex
+	let inline = text.match(inlineRegex);
+
+
+	// replace regex with code
+	if (inline !== null) {
+		for (let i = 0; i < inline.length; i++) {
+			let match = inline[i];
+			let replacement = '\\lstinl{' + match.substring(1, match.length - 1) + '}';
+			text = text.replace(match, replacement);
+		}
+	}
+
+	return [inline !== null, text];
+}
+
+/*
+* @param {string} text
+* @returns {array} [(bool)changed text, (string)text]
+*/
+let parseIndentedCode = (text) => {
+	// find first line that begins with four whitespace caracters and follows two newlines
+	let regex = /\n\s*\n\s{4}(.*?)\n{2}/gs;
+	let matches = text.match(regex);
+	if (matches !== null) {
+		for (let i = 0; i < matches.length; i++) {
+			let match = matches[i];
+			// split match into lines
+			let lines = match.split('\n');
+			let codeBlock = '';
+			let trail = '';
+			for (let j = 0; j < lines.length; j++) {
+				let line = lines[j];
+				// is line empty or only whitespace?
+				if (line.length === 0 || /^\s*$/.test(line))
+					continue;
+
+				// if line does not start with four whitespace characters the code block ends here
+				if (!/^\s{4}/.test(line)){
+					// add this line all following lines to the trail
+					for (let k = j; k < lines.length; k++) {
+						trail += lines[k] + '\n';
+					}
+					break;
+				}
+
+				// remove four whitespace characters
+				line = line.substring(4);
+				// remove only trailing whitespace
+				line = line.replace(/\s*$/, '');
+				// add line to codeBlock
+				codeBlock += line + '\n';
+			}
+			// remove leading and training newlines
+			codeBlock = codeBlock.trim();
+
+			// replace match with code block
+			let replacement = '\n\\begin{lstlisting}\n' + codeBlock + '\n\\end{lstlisting}\n';
+			replacement += trail;
+			text = text.replace(match, replacement);
+		}
+	}
+
+	return [matches !== null, text];
+}
+
+// template
 let surroundWithMinimalTemplate = (text) => {
 	preamble += "\\usepackage[utf8]{inputenc}\n";
 
