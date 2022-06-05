@@ -36,7 +36,8 @@ function activate(context) {
 		text = parseBold(text);
 		text = parseItalic(text);
 		text = parseCode(text);
-		text = parseTitles(text);
+		text = parseTitle(text);
+		text = parseHeadings(text);
 
 		// document syntax
 		if (maketitle) {
@@ -203,7 +204,7 @@ let parseIndentedCode = (text) => {
 	return [matches !== null, text];
 }
 
-let parseTitles = (text) => {
+let parseTitle = (text) => {
 	// get first line of text
 	let firstLine = text.split('\n')[0];
 	// get regex for #<sometext>
@@ -216,6 +217,45 @@ let parseTitles = (text) => {
 		// add title to preamble
 		preamble += '\\title{' + title + '}\n';
 		maketitle = true;
+	}
+	return text;
+}
+
+let parseHeadings = (text) => {
+	// get all lines in text with markdown heading
+	let regex = /^(#+)\s(.*)$/gm;
+	let matches = text.match(regex);
+	if (matches !== null) {
+		for (let i = 0; i < matches.length; i++) {
+			let match = matches[i];
+			// get level of markdown heading by counting #
+			let level = match.match(/^#+/)[0].length;
+			// remove # from match
+			let headingText = match.replace(/^#+/, '');
+			// replace line with LaTeX section of right level
+			switch (level) {
+				case 1:
+					headingText = '\n\\section{' + headingText + '}';
+					break;
+				case 2:
+					headingText = '\n\\subsection{' + headingText + '}';
+					break;
+				case 3:
+					headingText = '\n\\subsubsection{' + headingText + '}';
+					break;
+				case 4:
+					headingText = '\n\\paragraph{' + headingText + '}';
+					break;
+				case 5:
+					headingText = '\n\\subparagraph{' + headingText + '}';
+					break;
+				default:
+					headingText = '\n\\noindent\n\\\\\\textbf{' + headingText + '}';
+					break;
+			}
+			// replace line with LaTeX section
+			text = text.replace(match, headingText);
+		}
 	}
 	return text;
 }
