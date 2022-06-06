@@ -33,9 +33,10 @@ function activate(context) {
 		text = text.replace(/\r\n/g, '\n');
 
 		//parse
+		text = parseCode(text);
+		text = parseNewlines(text);
 		text = parseBold(text);
 		text = parseItalic(text);
-		text = parseCode(text);
 		text = parseTitle(text);
 		text = parseHeadings(text);
 
@@ -72,6 +73,17 @@ module.exports = {
 }
 
 // UTITLITY FUNCTIONS
+let parseNewlines = (text) => {let regex = /[^ ]{1,} {2,}\n/g
+	let matches = text.match(regex);
+	if (matches !== null)
+		for (let i = 0; i < matches.length; i++) {
+			let match = matches[i];
+			// replace lines while removing spaces
+			text = text.replace(match, match.replace(/ {2,}\n/g, '') + '\\\\\n');
+		}
+	return text;
+}
+
 let parseBold = (text) => {
 	// get regex for **<sometext>**
 	let bold = /[\*\_][\*\_](.*?)[\*\_][\*\_]/gs;
@@ -259,6 +271,7 @@ let parseHeadings = (text) => {
 	}
 	return text;
 }
+
 
 // template
 let surroundWithMinimalTemplate = (text) => {
