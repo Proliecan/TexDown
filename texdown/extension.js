@@ -33,12 +33,8 @@ function activate(context) {
 		text = text.replace(/\r\n/g, '\n');
 
 		//parse
-		text = parseCode(text);
-		text = parseNewlines(text);
-		text = parseBold(text);
-		text = parseItalic(text);
-		text = parseTitle(text);
-		text = parseHeadings(text);
+		text = parse(text);
+
 
 		// document syntax
 		if (maketitle) {
@@ -46,7 +42,7 @@ function activate(context) {
 			text = '\\maketitle\n' + text;
 		}
 		text = surroundWithMinimalTemplate(text);
-		
+
 
 		// write to file with .tex extension
 		let fileName = editor.document.fileName;
@@ -73,7 +69,21 @@ module.exports = {
 }
 
 // UTITLITY FUNCTIONS
-let parseNewlines = (text) => {let regex = /[^ ]{1,} {2,}\n/g
+let parse = (text) => {
+	text = parseBlockquotes(text);
+	text = parseCode(text);
+	text = parseNewlines(text);
+	text = parseBold(text);
+	text = parseItalic(text);
+	text = parseTitle(text);
+	text = parseHeadings(text);
+	
+	return text;
+}
+
+
+let parseNewlines = (text) => {
+	let regex = /[^ ]{1,} {2,}\n/g
 	let matches = text.match(regex);
 	if (matches !== null)
 		for (let i = 0; i < matches.length; i++) {
@@ -172,7 +182,7 @@ let parseInlineCode = (text) => {
 */
 let parseIndentedCode = (text) => {
 	// find first line that begins with four whitespace caracters and follows two newlines
-	let regex = /\n\s*\n\s{4}(.*?)\n{2}/gs;
+	let regex = /\s*\n\s{4}(.*?)\n{2}/gs;
 	let matches = text.match(regex);
 	if (matches !== null) {
 		for (let i = 0; i < matches.length; i++) {
@@ -188,7 +198,7 @@ let parseIndentedCode = (text) => {
 					continue;
 
 				// if line does not start with four whitespace characters the code block ends here
-				if (!/^\s{4}/.test(line)){
+				if (!/^\s{4}/.test(line)) {
 					// add this line all following lines to the trail
 					for (let k = j; k < lines.length; k++) {
 						trail += lines[k] + '\n';
@@ -267,6 +277,42 @@ let parseHeadings = (text) => {
 			}
 			// replace line with LaTeX section
 			text = text.replace(match, headingText);
+		}
+	}
+	return text;
+}
+
+let parseBlockquotes = (text) => {
+	// get regex for blockquote line
+	let quoteRegex = /^>(.*)$/m;
+	//  test if there is at least one blockquote line
+	let matches = text.match(quoteRegex);
+
+	if (matches !== null) {
+		// combnine all consecutive blockquote lines into one blockquote
+		let blockquote = '';
+		let quote = '';
+
+		let lines = text.split('\n');
+		for (let i = 0; i < lines.length; i++) {
+			let line = lines[i];
+			// is line a blockquote line?
+			if (quoteRegex.test(line)) {
+				// add line to blockquote
+				blockquote += line + '\n';
+				// remove > from line
+				quote += line.replace(/^>\s{0,1}/m, '') + '\n';
+			} else if (blockquote !== '') {
+				// parse content of quote
+				quote = parse(quote);
+
+				// replace blockquote with qoute in latex
+				text = text.replace(blockquote, '\n\\begin{quote}\n' + quote + '\n\\end{quote}\n');
+
+				// reset blockquote
+				blockquote = '';
+				quote = '';
+			}
 		}
 	}
 	return text;
