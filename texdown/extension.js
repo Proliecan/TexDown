@@ -2,6 +2,7 @@ const vscode = require('vscode');
 const fs = require('fs');
 
 let preamble = "";
+let attributes = "";
 let maketitle = false;
 
 /**
@@ -27,6 +28,7 @@ function activate(context) {
 
 		// clear praemble
 		preamble = "";
+		attributes = "";
 		maketitle = false;
 
 		// convert text to LF line endings
@@ -77,6 +79,7 @@ let parse = (text) => {
 	text = parseItalic(text);
 	text = parseTitle(text);
 	text = parseHeadings(text);
+	text = parseLinks(text);
 	
 	return text;
 }
@@ -236,8 +239,8 @@ let parseTitle = (text) => {
 		let title = firstLine.match(titleRegex)[1];
 		// remove line from text
 		text = text.replace(firstLine, '');
-		// add title to preamble
-		preamble += '\\title{' + title + '}\n';
+		// add title to attributes
+		attributes += '\\title{' + title + '}\n';
 		maketitle = true;
 	}
 	return text;
@@ -318,6 +321,30 @@ let parseBlockquotes = (text) => {
 	return text;
 }
 
+let parseLinks = (text) => {
+	// get regex for link line
+	let regex = /\[(.*?)\]\((.*?)\)/g;
+	// get matches
+	let matches = text.match(regex);
+	if (matches !== null) {
+		// add package to praemble
+		preamble += `\\usepackage[
+	colorlinks=true,
+	linkcolor=cyan,
+	filecolor=magenta,      
+	urlcolor=blue,
+	]{hyperref}\n`;
+		for (let i = 0; i < matches.length; i++) {
+			// get link text and url
+			let linkText = matches[i].match(/\[(.*?)\]/)[1];
+			let linkUrl = matches[i].match(/\((.*?)\)/)[1];
+			// replace link with hyperlink
+			text = text.replace(matches[i], '\\href{' + linkUrl + '}{' + linkText + '}');
+		}
+	}
+	return text;
+}
+
 
 // template
 let surroundWithMinimalTemplate = (text) => {
@@ -325,8 +352,11 @@ let surroundWithMinimalTemplate = (text) => {
 
 	let doc = `\\documentclass[12pt]{article}
 
+% preamble
 ${preamble}
 
+% attributes
+${attributes}
 \\begin{document}
 ${text}
 \\end{document}
