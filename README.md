@@ -1,4 +1,4 @@
-# MdTex
+# TexDown
 
 ## Table of Contents
 
