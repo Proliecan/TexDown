@@ -80,7 +80,7 @@ let parse = (text) => {
 	text = parseTitle(text);
 	text = parseHeadings(text);
 	text = parseLinks(text);
-	
+
 	return text;
 }
 
@@ -282,6 +282,33 @@ let parseHeadings = (text) => {
 			text = text.replace(match, headingText);
 		}
 	}
+
+	// ----- and ====== syntax
+	// equal signs
+	let dashedHeadingRegex = /(?:^.*\n)={1,}$/gm;
+	matches = text.match(dashedHeadingRegex);
+	if (matches !== null) {
+		for (let i = 0; i < matches.length; i++) {
+			let match = matches[i];
+			
+			let heading = match.match(/(?:^.*\n)(?!(?!=))/m)[0].replace(/\n/g, '');
+			let replacement = '\n\\section{' + heading + '}';
+			text = text.replace(match, replacement);
+		}
+	}
+	// dashes
+	let equalHeadingRegex = /(?:^.*\n)-{1,}$/gm;
+	matches = text.match(equalHeadingRegex);
+	if (matches !== null) {
+		for (let i = 0; i < matches.length; i++) {
+			let match = matches[i];
+
+			let heading = match.match(/(?:^.*\n)(?!(?!-))/m)[0].replace(/\n/g, '');
+			let replacement = '\n\\subsection{' + heading + '}';
+			text = text.replace(match, replacement);
+		}
+	}
+
 	return text;
 }
 
