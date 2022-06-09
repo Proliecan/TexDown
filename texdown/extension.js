@@ -75,6 +75,7 @@ let parse = (text) => {
 	text = parseBlockquotes(text);
 	text = parseCode(text);
 	text = parseNewlines(text);
+	text = parsehorizontalRule(text);
 	text = parseBold(text);
 	text = parseItalic(text);
 	text = parseTitle(text);
@@ -367,6 +368,24 @@ let parseLinks = (text) => {
 			let linkUrl = matches[i].match(/\((.*?)\)/)[1];
 			// replace link with hyperlink
 			text = text.replace(matches[i], '\\href{' + linkUrl + '}{' + linkText + '}');
+		}
+	}
+	return text;
+}
+
+let parsehorizontalRule = (text) => {
+	let regex = /^\n(?:[-_*]{3,}\n)/gm;
+	let matches = text.match(regex);
+	if (matches !== null) {
+		for (let i = 0; i < matches.length; i++) {
+			let match = matches[i];
+			// count \n in match
+			let n = match.match(/\n/g).length;
+			// replace line with an LaTeX horizontal rule for every n
+			let replacement = '';
+			for (let j = 1; j < n; j++)
+				replacement += '\n\\hrulefill\n';
+			text = text.replace(match, replacement);
 		}
 	}
 	return text;
